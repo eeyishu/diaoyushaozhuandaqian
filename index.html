@@ -69,6 +69,9 @@
   .tab.active { color: var(--brand); border-bottom-color: var(--brand); }
   .tab .tab-count { font-size: 11px; color: var(--ink-soft); margin-left: 4px; }
 
+  .reminder-banner { display: flex; align-items: center; gap: 8px; background: var(--rust-soft); color: var(--rust);
+    border-radius: 999px; padding: 10px 18px; font-size: 13px; font-weight: 600; margin-bottom: 16px; width: fit-content; }
+
   .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 18px; }
   .search { flex: 1; min-width: 160px; padding: 10px 16px; border: 1px solid var(--line); border-radius: 999px;
     background: var(--paper-raised); color: var(--ink); font-size: 14px; font-family: inherit; }
@@ -99,8 +102,8 @@
   .pill-closed { background: var(--rust-soft); color: var(--rust); }
 
   /* Kanban */
-  .board { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 12px; -webkit-overflow-scrolling: touch; }
-  .col { flex: 0 0 260px; display: flex; flex-direction: column; min-width: 0; }
+  .board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; padding-bottom: 12px; }
+  .col { display: flex; flex-direction: column; min-width: 0; }
   .col-head { display: flex; align-items: center; justify-content: space-between; padding: 6px 4px 10px;
     border-bottom: 2px solid var(--stage-color, var(--line)); margin-bottom: 10px; }
   .col-head .name { font-size: 13px; font-weight: 600; }
@@ -177,19 +180,29 @@
   footer { text-align: center; font-size: 12px; color: var(--ink-soft); margin-top: 30px; }
   .footer-row { display: flex; justify-content: center; align-items: center; gap: 10px; flex-wrap: wrap; }
   .empty-state { text-align: center; padding: 60px 20px; color: var(--ink-soft); font-size: 14px; }
+
+  @media (max-width: 640px) {
+    .app { padding: 18px 14px 60px; }
+    .topbar h1 { font-size: 24px; }
+    .stats { gap: 16px; }
+    .board { display: flex; overflow-x: auto; -webkit-overflow-scrolling: touch; gap: 12px; }
+    .col { flex: 0 0 78vw; }
+  }
 </style>
 </head>
 <body>
 <div class="app">
   <div class="topbar">
     <div>
-      <h1>🐟 鲷鱼烧赚大钱</h1>
-      <div class="sub">被挂不是不优秀，只是不匹配</div>
+      <h1>🐶 鲷鱼烧赚大钱💰</h1>
+      <div class="sub">被挂不是不优秀，只是不匹配！</div>
     </div>
     <div class="stats" id="stats"></div>
   </div>
 
   <div class="tabs" id="tabs"></div>
+
+  <div class="reminder-banner" id="reminderBanner" style="display:none;"></div>
 
   <div class="toolbar">
     <input class="search" id="search" placeholder="🔍 搜索公司或岗位…" />
@@ -206,6 +219,8 @@
     <div class="footer-row">
       <span>数据仅保存在这台设备的浏览器中</span>
       <button class="btn-tiny" id="exportBtn">💾 导出备份</button>
+      <button class="btn-tiny" id="importBtn">📥 导入备份</button>
+      <input type="file" id="importFile" accept="application/json" style="display:none;" />
     </div>
   </footer>
 </div>
@@ -248,7 +263,10 @@
       </div>
       <div class="field">
         <label for="f-joblink">岗位链接</label>
-        <input id="f-joblink" placeholder="https://…" />
+        <div style="display:flex; gap:6px;">
+          <input id="f-joblink" placeholder="https://…" style="flex:1;" />
+          <button type="button" class="btn-small" id="openLinkBtn">🔗 打开</button>
+        </div>
       </div>
     </div>
 
@@ -300,7 +318,7 @@
   "use strict";
 
   var STORE_KEY = 'qiuzhao_tracker_v2';
-  var REGIONS = { cn: '国内 🏮', us: '美国 🗽' };
+  var REGIONS = { cn: '中国 🏮', us: '美国 🗽' };
   var CATS = {
     applying:     { name: '投递中 📨', color: '#9FB6D6', pill: 'pill-applying' },
     interviewing: { name: '面试中 🎤', color: '#CFA05A', pill: 'pill-interviewing' },
@@ -435,7 +453,19 @@
       else if (s.cat === 'offer') offer++;
     });
     function stat(n,l){ return '<div class="stat"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>'; }
-    statsEl.innerHTML = stat(total,'📋 总岗位') + stat(applying,'📨 投递中') + stat(interviewing,'🎤 面试中') + stat(offer,'🎉 Offer中');
+    statsEl.innerHTML = stat(total,'📋 总岗位') + stat(applying,'📨 投递中') + stat(interviewing,'🎤 面试中') + stat(offer,'🎉 Offer');
+  }
+
+  function renderReminder(){
+    var banner = document.getElementById('reminderBanner');
+    var soonItems = state.items.filter(function(it){
+      var d = nextDate(it);
+      return d && isSoon(d) && computeStatus(it).cat !== 'closed';
+    });
+    if (soonItems.length === 0) { banner.style.display = 'none'; banner.innerHTML = ''; return; }
+    var names = soonItems.map(function(it){ return escapeHtml(it.company); }).join('、');
+    banner.style.display = 'flex';
+    banner.innerHTML = '⏰ 未来 3 天有 ' + soonItems.length + ' 场安排：' + names;
   }
 
   function filteredItems(){
@@ -450,6 +480,7 @@
   function renderAll(){
     renderTabs();
     renderStats();
+    renderReminder();
     document.getElementById('viewBoardBtn').className = activeView==='board' ? 'active' : '';
     document.getElementById('viewListBtn').className = activeView==='list' ? 'active' : '';
     var items = filteredItems();
@@ -693,6 +724,43 @@
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch(e) { alert('导出失败，请稍后再试'); }
+  });
+
+  document.getElementById('importBtn').addEventListener('click', function(){
+    document.getElementById('importFile').click();
+  });
+  document.getElementById('importFile').addEventListener('change', function(e){
+    var file = e.target.files && e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(){
+      try {
+        var parsed = JSON.parse(reader.result);
+        var incoming = (parsed && Array.isArray(parsed.items)) ? parsed.items : null;
+        if (!incoming) { alert('这个文件看起来不是有效的备份文件'); return; }
+        var added = 0, updated = 0;
+        incoming.forEach(function(inItem){
+          var idx = state.items.findIndex(function(x){ return x.id === inItem.id; });
+          if (idx >= 0) { state.items[idx] = inItem; updated++; }
+          else { state.items.push(inItem); added++; }
+        });
+        save();
+        renderAll();
+        alert('导入完成：新增 ' + added + ' 条，更新 ' + updated + ' 条');
+      } catch(err) {
+        alert('导入失败，文件格式不对');
+      } finally {
+        e.target.value = '';
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  document.getElementById('openLinkBtn').addEventListener('click', function(){
+    var url = fJobLink.value.trim();
+    if (!url) { fJobLink.focus(); return; }
+    if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+    window.open(url, '_blank', 'noopener');
   });
 
   document.getElementById('viewBoardBtn').addEventListener('click', function(){ activeView='board'; renderAll(); });
