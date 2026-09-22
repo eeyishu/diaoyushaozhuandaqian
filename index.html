@@ -144,7 +144,7 @@
   .pos-row:hover { background: var(--paper-raised); border-color: var(--line); }
   .pos-row .title { font-size: 14px; font-weight: 500; }
   .pos-row .title .dept { color: var(--ink-soft); font-weight: 400; font-size: 12.5px; }
-  .pos-row .date-col { font-size: 12px; color: var(--ink-soft); text-align: right; min-width: 60px; }
+  .pos-row .date-col { font-size: 12px; color: var(--ink-soft); text-align: right; min-width: 88px; white-space: nowrap; }
   .pos-row .date-col.soon { color: var(--rust); font-weight: 500; }
   @media (max-width: 640px) {
     .pos-row { grid-template-columns: 1fr auto; }
@@ -177,7 +177,12 @@
     padding: 14px; background: var(--paper-raised); }
   .round-row-top { display: flex; gap: 12px; align-items: center; }
   .round-row-top input { flex: 1; min-width: 0; }
-  .round-row-bottom { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .round-row-bottom { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .round-row-link { display: flex; gap: 8px; }
+  .round-row-link input { flex: 1; min-width: 0; }
+  .round-open-link { background: var(--paper); border: 1px solid var(--line); color: var(--ink-soft); font-size: 12px;
+    cursor: pointer; padding: 9px 12px; border-radius: 10px; flex: 0 0 auto; white-space: nowrap; }
+  .round-open-link:hover { color: var(--brand); background: var(--brand-soft); border-color: var(--brand-soft); }
   .round-row input, .round-row select { font-family: inherit; font-size: 13px; padding: 9px 12px;
     border: 1px solid var(--line); border-radius: 10px; background: var(--paper); color: var(--ink); width: 100%; }
   .round-row select { padding-right: 26px; }
@@ -447,18 +452,27 @@
     return { cat:'applying', label:'待投递', color: IDLE_COLOR };
   }
 
-  function nextDate(item){
+  function nextRound(item){
     var rounds = item.rounds || [];
     for (var i=rounds.length-1;i>=0;i--){
-      if (rounds[i].date) return rounds[i].date;
+      if (rounds[i].date) return rounds[i];
     }
     return null;
+  }
+  function nextDate(item){
+    var r = nextRound(item);
+    return r ? r.date : null;
   }
   function fmtDate(d){
     if (!d) return '';
     var dt = new Date(d + 'T00:00:00');
     if (isNaN(dt)) return d;
     return (dt.getMonth()+1) + '月' + dt.getDate() + '日';
+  }
+  function fmtDateTime(d, t){
+    var s = fmtDate(d);
+    if (t) s += ' ' + t;
+    return s;
   }
   function isSoon(d){
     if (!d) return false;
@@ -580,8 +594,9 @@
     var card = document.createElement('div');
     card.className = 'card';
     card.style.setProperty('--stage-color', s.color || CATS[s.cat].color);
-    var nd = nextDate(it);
-    var dateHtml = nd ? '<div class="next-date'+(isSoon(nd)?' soon':'')+'">'+fmtDate(nd)+'</div>' : '';
+    var nr = nextRound(it);
+    var nd = nr ? nr.date : null;
+    var dateHtml = nd ? '<div class="next-date'+(isSoon(nd)?' soon':'')+'">'+fmtDateTime(nd, nr.time)+'</div>' : '';
     card.innerHTML =
       '<div class="company">'+escapeHtml(it.company||'未命名公司')+'</div>' +
       '<div class="role">'+escapeHtml(it.title||'')+(it.department?' <span class="card-dept">· '+escapeHtml(it.department)+'</span>':'')+'</div>' +
@@ -624,7 +639,7 @@
         '<span class="chevron">'+(collapsed?'▸':'▾')+'</span>' +
         '<span class="cname">'+escapeHtml(company)+'</span>' +
         linkHtml +
-        '<button type="button" class="company-link-edit" title="设置/修改投递集合页链接">🔗✏️</button>' +
+        '<button type="button" class="company-link-edit" title="设置/修改投递集合页链接">✏️</button>' +
         '<span class="company-summary">'+dotsHtml+'</span>' +
         '<span class="ccount">'+count+' 个岗位</span>';
       group.appendChild(head);
@@ -639,7 +654,7 @@
       editBtn.addEventListener('click', function(e){
         e.stopPropagation();
         var current = getCompanyLink(activeRegion, company);
-        var url = window.prompt('这家公司的投递集合页链接（比如官网/HR系统的申请进度页，留空可清除）：', current);
+        var url = window.prompt('官网申请进度页：', current);
         if (url === null) return;
         setCompanyLink(activeRegion, company, url.trim());
         renderAll();
@@ -648,14 +663,15 @@
       if (!collapsed) {
         positions.forEach(function(it){
           var s = computeStatus(it);
-          var nd = nextDate(it);
+          var nr = nextRound(it);
+          var nd = nr ? nr.date : null;
           var row = document.createElement('div');
           row.className = 'pos-row';
           var pillStyle = s.color ? (' style="color:'+s.color+';background:'+s.color+'22;"') : '';
           row.innerHTML =
             '<div class="title">'+escapeHtml(it.title||'未命名岗位')+(it.department?' <span class="dept">· '+escapeHtml(it.department)+'</span>':'')+'</div>' +
             '<span class="pill '+CATS[s.cat].pill+'"'+pillStyle+'>'+escapeHtml(s.label)+'</span>' +
-            '<div class="date-col'+(isSoon(nd)?' soon':'')+'">'+(nd?fmtDate(nd):'—')+'</div>' +
+            '<div class="date-col'+(isSoon(nd)?' soon':'')+'">'+(nd?fmtDateTime(nd, nr.time):'—')+'</div>' +
             '<button class="btn-small">查看</button>';
           row.addEventListener('click', function(){ openPanel(it.id); });
           group.appendChild(row);
@@ -751,7 +767,14 @@
       var dateInput = document.createElement('input');
       dateInput.type = 'date';
       dateInput.value = r.date || '';
+      dateInput.title = '日期（测评填截止日期，面试填面试日期）';
       dateInput.addEventListener('input', function(){ r.date = dateInput.value; });
+
+      var timeInput = document.createElement('input');
+      timeInput.type = 'time';
+      timeInput.value = r.time || '';
+      timeInput.title = '具体时间（面试可填，测评通常留空）';
+      timeInput.addEventListener('input', function(){ r.time = timeInput.value; });
 
       var resultSelect = document.createElement('select');
       Object.keys(ROUND_RESULTS).forEach(function(key){
@@ -763,16 +786,41 @@
       resultSelect.addEventListener('change', function(){ r.result = resultSelect.value; });
 
       bottom.appendChild(dateInput);
+      bottom.appendChild(timeInput);
       bottom.appendChild(resultSelect);
+
+      var linkRow = document.createElement('div');
+      linkRow.className = 'round-row-link';
+
+      var linkInput = document.createElement('input');
+      linkInput.type = 'text';
+      linkInput.value = r.link || '';
+      linkInput.placeholder = '链接';
+      linkInput.addEventListener('input', function(){ r.link = linkInput.value; });
+
+      var openLinkBtn = document.createElement('button');
+      openLinkBtn.type = 'button';
+      openLinkBtn.className = 'round-open-link';
+      openLinkBtn.textContent = '打开';
+      openLinkBtn.addEventListener('click', function(){
+        var url = linkInput.value.trim();
+        if (!url) { linkInput.focus(); return; }
+        if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+        window.open(url, '_blank', 'noopener');
+      });
+
+      linkRow.appendChild(linkInput);
+      linkRow.appendChild(openLinkBtn);
 
       row.appendChild(top);
       row.appendChild(bottom);
+      row.appendChild(linkRow);
       roundsListEl.appendChild(row);
     });
   }
 
   document.getElementById('addRoundBtn').addEventListener('click', function(){
-    editingRounds.push({ id: uid(), name: defaultRoundName(editingRounds.length), date: '', result: 'pending' });
+    editingRounds.push({ id: uid(), name: defaultRoundName(editingRounds.length), date: '', time: '', link: '', result: 'pending' });
     renderRoundsEditor();
   });
 
@@ -833,7 +881,7 @@
       jobLink: fJobLink.value.trim(),
       jd: fJd.value.trim(),
       applyStage: fApplyStage.value,
-      rounds: editingRounds.map(function(r,idx){ return { id: r.id||uid(), name: (r.name||defaultRoundName(idx)).trim(), date: r.date||'', result: r.result||'pending' }; }),
+      rounds: editingRounds.map(function(r,idx){ return { id: r.id||uid(), name: (r.name||defaultRoundName(idx)).trim(), date: r.date||'', time: r.time||'', link: (r.link||'').trim(), result: r.result||'pending' }; }),
       resultStage: fResult.value || null,
       notes: fNotes.value.trim()
     };
