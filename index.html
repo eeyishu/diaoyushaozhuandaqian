@@ -174,6 +174,10 @@
   .round-remove { background: var(--paper); border: 1px solid var(--line); color: var(--ink-soft); font-size: 18px; cursor: pointer;
     padding: 6px 11px; line-height: 1; flex: 0 0 auto; border-radius: 10px; }
   .round-remove:hover { color: var(--rust); background: var(--rust-soft); border-color: var(--rust-soft); }
+  .round-move { background: var(--paper); border: 1px solid var(--line); color: var(--ink-soft); font-size: 14px; cursor: pointer;
+    padding: 6px 9px; line-height: 1; flex: 0 0 auto; border-radius: 10px; }
+  .round-move:hover:not(:disabled) { color: var(--brand); background: var(--brand-soft); border-color: var(--brand-soft); }
+  .round-move:disabled { opacity: 0.3; cursor: default; }
 
   .panel-actions { display: flex; gap: 8px; margin-top: 6px; }
   .panel-actions .btn-primary { flex: 1; }
@@ -289,7 +293,7 @@
       </select>
     </div>
 
-    <div class="section-label">面试轮次</div>
+    <div class="section-label">测评 / 面试轮次</div>
     <div class="rounds-list" id="roundsList"></div>
     <button class="btn-small" id="addRoundBtn" style="align-self:flex-start;">+ 添加一轮</button>
 
@@ -382,24 +386,26 @@
     catch(e) { console.warn('save failed', e); }
   }
 
+  var IDLE_COLOR = '#C9B7BD';
+
   function computeStatus(item){
     if (item.resultStage) {
-      if (item.resultStage === 'accepted') return { cat:'closed', label:'已接受 Offer' };
-      if (item.resultStage === 'declined') return { cat:'closed', label:'已拒绝 Offer' };
-      return { cat:'offer', label: RESULT_LABELS[item.resultStage] };
+      if (item.resultStage === 'accepted') return { cat:'closed', label:'已接受 Offer', color: CATS.closed.color };
+      if (item.resultStage === 'declined') return { cat:'closed', label:'已拒绝 Offer', color: CATS.closed.color };
+      return { cat:'offer', label: RESULT_LABELS[item.resultStage], color: CATS.offer.color };
     }
-    if (item.applyStage === 'screen_reject') return { cat:'closed', label:'简历未通过' };
+    if (item.applyStage === 'screen_reject') return { cat:'closed', label:'简历未通过', color: CATS.closed.color };
     var rounds = item.rounds || [];
     var failed = rounds.find(function(r){ return r.result === 'fail' || r.result === 'lateral_fail'; });
-    if (failed) return { cat:'closed', label: (failed.name||'面试') + (failed.result==='lateral_fail' ? ' 横向挂' : ' 未通过') };
+    if (failed) return { cat:'closed', label: (failed.name||'面试') + (failed.result==='lateral_fail' ? ' 横向挂' : ' 未通过'), color: CATS.closed.color };
     if (rounds.length > 0) {
       var last = rounds[rounds.length-1];
-      if (!last.result || last.result === 'pending') return { cat:'interviewing', label: (last.name||'面试') + ' 进行中' };
-      if (last.result === 'pass') return { cat:'interviewing', label: (last.name||'面试') + ' 通过，待安排下一轮' };
+      if (!last.result || last.result === 'pending') return { cat:'interviewing', label: (last.name||'面试') + ' 进行中', color: CATS.interviewing.color };
+      if (last.result === 'pass') return { cat:'interviewing', label: (last.name||'面试') + ' 通过，待安排下一轮', color: CATS.interviewing.color };
     }
-    if (item.applyStage === 'screen_pass') return { cat:'interviewing', label:'简历通过，待约面' };
-    if (item.applyStage === 'screening') return { cat:'applying', label:'简历筛选中' };
-    return { cat:'applying', label:'待投递' };
+    if (item.applyStage === 'screen_pass') return { cat:'interviewing', label:'简历通过，待约面', color: CATS.interviewing.color };
+    if (item.applyStage === 'screening') return { cat:'applying', label:'简历筛选中', color: CATS.applying.color };
+    return { cat:'applying', label:'待投递', color: IDLE_COLOR };
   }
 
   function nextDate(item){
@@ -530,7 +536,7 @@
     var s = computeStatus(it);
     var card = document.createElement('div');
     card.className = 'card';
-    card.style.setProperty('--stage-color', CATS[s.cat].color);
+    card.style.setProperty('--stage-color', s.color || CATS[s.cat].color);
     var nd = nextDate(it);
     var dateHtml = nd ? '<div class="next-date'+(isSoon(nd)?' soon':'')+'">'+fmtDate(nd)+'</div>' : '';
     card.innerHTML =
@@ -561,9 +567,10 @@
         var nd = nextDate(it);
         var row = document.createElement('div');
         row.className = 'pos-row';
+        var pillStyle = s.color ? (' style="color:'+s.color+';background:'+s.color+'22;"') : '';
         row.innerHTML =
           '<div class="title">'+escapeHtml(it.title||'未命名岗位')+(it.department?' <span class="dept">· '+escapeHtml(it.department)+'</span>':'')+'</div>' +
-          '<span class="pill '+CATS[s.cat].pill+'">'+escapeHtml(s.label)+'</span>' +
+          '<span class="pill '+CATS[s.cat].pill+'"'+pillStyle+'>'+escapeHtml(s.label)+'</span>' +
           '<div class="date-col'+(isSoon(nd)?' soon':'')+'">'+(nd?fmtDate(nd):'—')+'</div>' +
           '<button class="btn-small">查看</button>';
         row.addEventListener('click', function(){ openPanel(it.id); });
@@ -609,6 +616,34 @@
       nameInput.placeholder = '轮次名称';
       nameInput.addEventListener('input', function(){ r.name = nameInput.value; });
 
+      var moveUpBtn = document.createElement('button');
+      moveUpBtn.type = 'button';
+      moveUpBtn.className = 'round-move';
+      moveUpBtn.innerHTML = '&uarr;';
+      moveUpBtn.title = '上移';
+      moveUpBtn.disabled = idx === 0;
+      moveUpBtn.addEventListener('click', function(){
+        if (idx === 0) return;
+        var tmp = editingRounds[idx-1];
+        editingRounds[idx-1] = editingRounds[idx];
+        editingRounds[idx] = tmp;
+        renderRoundsEditor();
+      });
+
+      var moveDownBtn = document.createElement('button');
+      moveDownBtn.type = 'button';
+      moveDownBtn.className = 'round-move';
+      moveDownBtn.innerHTML = '&darr;';
+      moveDownBtn.title = '下移';
+      moveDownBtn.disabled = idx === editingRounds.length - 1;
+      moveDownBtn.addEventListener('click', function(){
+        if (idx === editingRounds.length - 1) return;
+        var tmp = editingRounds[idx+1];
+        editingRounds[idx+1] = editingRounds[idx];
+        editingRounds[idx] = tmp;
+        renderRoundsEditor();
+      });
+
       var removeBtn = document.createElement('button');
       removeBtn.type = 'button';
       removeBtn.className = 'round-remove';
@@ -620,6 +655,8 @@
       });
 
       top.appendChild(nameInput);
+      top.appendChild(moveUpBtn);
+      top.appendChild(moveDownBtn);
       top.appendChild(removeBtn);
 
       var bottom = document.createElement('div');
