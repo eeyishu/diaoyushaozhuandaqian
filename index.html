@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>鲷鱼烧赚大钱</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #FDF5F1;
+    --paper-raised: #FFFFFF;
+    --ink: #6B5568;
+    --ink-soft: #A6929B;
+    --line: #F1DFE1;
+    --brand: #E38FA0;
+    --brand-soft: #FBE7EA;
+    --gold: #CFA05A;
+    --gold-soft: #FAF0DC;
+    --blue: #9FB6D6;
+    --blue-soft: #E8EFF7;
+    --teal: #A997C2;
+    --teal-soft: #F0E9F6;
+    --rust: #E2A18F;
+    --rust-soft: #FBEBE5;
+    --radius: 16px;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #2B222A; --paper-raised: #362A35; --ink: #F5E9EC; --ink-soft: #C9B4BC;
+      --line: #4A3A46; --brand: #F2A8B6; --brand-soft: #4A2E36; --gold: #E0BB80; --gold-soft: #4A3B22;
+      --blue: #B9CBE3; --blue-soft: #2E3A4A; --teal: #C6B4DE; --teal-soft: #3A2F49;
+      --rust: #EFC0AE; --rust-soft: #4A2F28;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #2B222A; --paper-raised: #362A35; --ink: #F5E9EC; --ink-soft: #C9B4BC;
+    --line: #4A3A46; --brand: #F2A8B6; --brand-soft: #4A2E36; --gold: #E0BB80; --gold-soft: #4A3B22;
+    --blue: #B9CBE3; --blue-soft: #2E3A4A; --teal: #C6B4DE; --teal-soft: #3A2F49;
+    --rust: #EFC0AE; --rust-soft: #4A2F28;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: 'IBM Plex Sans', -apple-system, 'Noto Sans SC', 'PingFang SC', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, .serif { font-family: 'Source Serif 4', 'Noto Serif SC', serif; }
+  .app { max-width: 1300px; margin: 0 auto; padding: 26px 22px 80px; }
+
+  .topbar { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px;
+    padding-bottom: 18px; border-bottom: 1px solid var(--line); margin-bottom: 18px; }
+  .topbar h1 { font-size: 28px; font-weight: 600; margin: 0 0 4px; }
+  .topbar .sub { color: var(--ink-soft); font-size: 13px; }
+  .stats { display: flex; gap: 24px; flex-wrap: wrap; }
+  .stat { text-align: right; }
+  .stat .n { font-family: 'Source Serif 4', serif; font-size: 24px; font-weight: 600; line-height: 1; }
+  .stat .l { font-size: 11.5px; color: var(--ink-soft); margin-top: 3px; }
+
+  .tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--line); }
+  .tab { padding: 9px 4px; margin-right: 18px; background: none; border: none; font-family: inherit;
+    font-size: 15px; font-weight: 500; color: var(--ink-soft); cursor: pointer; position: relative; top: 1px;
+    border-bottom: 2px solid transparent; }
+  .tab.active { color: var(--brand); border-bottom-color: var(--brand); }
+  .tab .tab-count { font-size: 11px; color: var(--ink-soft); margin-left: 4px; }
+
+  .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 18px; }
+  .search { flex: 1; min-width: 160px; padding: 10px 16px; border: 1px solid var(--line); border-radius: 999px;
+    background: var(--paper-raised); color: var(--ink); font-size: 14px; font-family: inherit; }
+  .search:focus { outline: 2px solid var(--brand); outline-offset: -1px; }
+  .view-toggle { display: flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--paper-raised); }
+  .view-toggle button { font-family: inherit; font-size: 13px; padding: 8px 16px; background: transparent;
+    border: none; color: var(--ink-soft); cursor: pointer; border-radius: 999px; }
+  .view-toggle button.active { background: var(--brand); color: #fff; }
+  button { font-family: inherit; cursor: pointer; }
+  .btn-primary { background: var(--brand); color: #fff; border: none; padding: 10px 20px; border-radius: 999px;
+    font-size: 14px; font-weight: 600; white-space: nowrap; box-shadow: 0 3px 10px rgba(227,143,160,0.35); }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-ghost { background: var(--paper-raised); border: 1px solid var(--line); color: var(--ink); padding: 9px 16px;
+    border-radius: 999px; font-size: 13px; white-space: nowrap; }
+  .btn-ghost:hover { border-color: var(--brand); color: var(--brand); }
+  .btn-small { background: var(--paper-raised); border: 1px solid var(--line); color: var(--ink-soft); padding: 5px 12px;
+    border-radius: 999px; font-size: 12px; }
+  .btn-small:hover { border-color: var(--brand); color: var(--brand); }
+  .btn-tiny { background: none; border: none; color: var(--ink-soft); font-size: 12px; text-decoration: underline;
+    text-underline-offset: 2px; cursor: pointer; padding: 2px 4px; }
+  .btn-tiny:hover { color: var(--brand); }
+
+  /* status pill */
+  .pill { display: inline-block; font-size: 11.5px; padding: 4px 11px; border-radius: 999px; font-weight: 600; white-space: nowrap; }
+  .pill-applying { background: var(--blue-soft); color: var(--blue); }
+  .pill-interviewing { background: var(--gold-soft); color: var(--gold); }
+  .pill-offer { background: var(--teal-soft); color: var(--teal); }
+  .pill-closed { background: var(--rust-soft); color: var(--rust); }
+
+  /* Kanban */
+  .board { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 12px; -webkit-overflow-scrolling: touch; }
+  .col { flex: 0 0 260px; display: flex; flex-direction: column; min-width: 0; }
+  .col-head { display: flex; align-items: center; justify-content: space-between; padding: 6px 4px 10px;
+    border-bottom: 2px solid var(--stage-color, var(--line)); margin-bottom: 10px; }
+  .col-head .name { font-size: 13px; font-weight: 600; }
+  .col-head .count { font-size: 12px; color: var(--ink-soft); background: var(--paper-raised); border: 1px solid var(--line);
+    border-radius: 10px; padding: 1px 7px; }
+  .col-body { flex: 1; min-height: 60px; display: flex; flex-direction: column; gap: 8px; }
+  .empty-col { font-size: 12px; color: var(--ink-soft); border: 1px dashed var(--line); border-radius: 14px;
+    padding: 14px 10px; text-align: center; }
+  .card { background: var(--paper-raised); border: 1px solid var(--line); border-left: 4px solid var(--stage-color, var(--line));
+    border-radius: var(--radius); padding: 13px 14px; cursor: pointer; transition: box-shadow 0.15s ease, transform 0.15s ease; }
+  .card:hover { box-shadow: 0 6px 16px rgba(227,143,160,0.22); transform: translateY(-1px); }
+  .card .company { font-weight: 600; font-size: 14px; margin-bottom: 1px; }
+  .card .role { font-size: 12.5px; color: var(--ink-soft); margin-bottom: 7px; }
+  .card .meta { font-size: 11.5px; color: var(--ink-soft); }
+  .card .next-date { margin-top: 5px; font-size: 11px; font-weight: 500; }
+  .card .next-date.soon { color: var(--rust); }
+
+  /* List view */
+  .company-group { margin-bottom: 22px; }
+  .company-head { display: flex; align-items: baseline; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line);
+    margin-bottom: 8px; }
+  .company-head .cname { font-size: 16px; font-weight: 600; font-family: 'Source Serif 4', serif; }
+  .company-head .ccount { font-size: 12px; color: var(--ink-soft); }
+  .pos-row { display: grid; grid-template-columns: 1fr auto auto auto; gap: 14px; align-items: center;
+    padding: 10px 12px; border-radius: 12px; cursor: pointer; border: 1px solid transparent; }
+  .pos-row:hover { background: var(--paper-raised); border-color: var(--line); }
+  .pos-row .title { font-size: 14px; font-weight: 500; }
+  .pos-row .title .dept { color: var(--ink-soft); font-weight: 400; font-size: 12.5px; }
+  .pos-row .date-col { font-size: 12px; color: var(--ink-soft); text-align: right; min-width: 60px; }
+  .pos-row .date-col.soon { color: var(--rust); font-weight: 500; }
+  @media (max-width: 640px) {
+    .pos-row { grid-template-columns: 1fr auto; }
+    .pos-row .date-col { display: none; }
+  }
+
+  /* Panel */
+  .overlay { position: fixed; inset: 0; background: rgba(20,20,18,0.35); display: none; align-items: flex-start;
+    justify-content: flex-end; z-index: 50; }
+  .overlay.open { display: flex; }
+  .panel { width: min(440px, 100vw); height: 100%; background: var(--paper); border-left: 1px solid var(--line);
+    padding: 22px 22px calc(22px + env(safe-area-inset-bottom, 0px)); overflow-y: auto; display: flex;
+    flex-direction: column; gap: 14px; position: relative; }
+  .panel h2 { font-size: 19px; margin: 0 0 2px; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field-row { display: flex; gap: 10px; }
+  .field-row .field { flex: 1; }
+  .field label { font-size: 12px; color: var(--ink-soft); font-weight: 500; }
+  .field input, .field select, .field textarea {
+    font-family: inherit; font-size: 14px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px;
+    background: var(--paper-raised); color: var(--ink); width: 100%;
+  }
+  .field textarea { resize: vertical; min-height: 60px; }
+  .field textarea.big { min-height: 110px; }
+  .field input:focus, .field select:focus, .field textarea:focus { outline: 2px solid var(--brand); outline-offset: -1px; }
+  .section-label { font-size: 12.5px; font-weight: 600; margin-top: 6px; padding-top: 12px; border-top: 1px solid var(--line); }
+
+  .rounds-list { display: flex; flex-direction: column; gap: 8px; }
+  .round-row { display: grid; grid-template-columns: 1fr 120px 110px auto; gap: 6px; align-items: center; }
+  .round-row input, .round-row select { font-family: inherit; font-size: 12.5px; padding: 7px 9px;
+    border: 1px solid var(--line); border-radius: 10px; background: var(--paper-raised); color: var(--ink); }
+  .round-row input:focus, .round-row select:focus { outline: 2px solid var(--brand); outline-offset: -1px; }
+  .round-remove { background: none; border: none; color: var(--ink-soft); font-size: 16px; cursor: pointer; padding: 4px; }
+  .round-remove:hover { color: var(--rust); }
+  @media (max-width: 480px) {
+    .round-row { grid-template-columns: 1fr; }
+  }
+
+  .panel-actions { display: flex; gap: 8px; margin-top: 6px; }
+  .panel-actions .btn-primary { flex: 1; }
+  .link-delete { background: none; border: none; color: var(--rust); font-size: 13px; padding: 6px 0; text-align: left; cursor: pointer; }
+  .close-x { position: absolute; top: 18px; right: 18px; background: none; border: none; font-size: 20px; color: var(--ink-soft);
+    line-height: 1; cursor: pointer; }
+
+  footer { text-align: center; font-size: 12px; color: var(--ink-soft); margin-top: 30px; }
+  .footer-row { display: flex; justify-content: center; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--ink-soft); font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div>
+      <h1>🐟 鲷鱼烧赚大钱</h1>
+      <div class="sub">被挂不是不优秀，只是不匹配</div>
+    </div>
+    <div class="stats" id="stats"></div>
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+
+  <div class="toolbar">
+    <input class="search" id="search" placeholder="🔍 搜索公司或岗位…" />
+    <div class="view-toggle">
+      <button id="viewBoardBtn">🗂️ 看板</button>
+      <button id="viewListBtn">📃 列表</button>
+    </div>
+    <button class="btn-primary" id="addBtn">✨ 新增岗位</button>
+  </div>
+
+  <div id="content"></div>
+
+  <footer>
+    <div class="footer-row">
+      <span>数据仅保存在这台设备的浏览器中</span>
+      <button class="btn-tiny" id="exportBtn">💾 导出备份</button>
+    </div>
+  </footer>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="panel">
+    <button class="close-x" id="closeBtn" aria-label="关闭">&times;</button>
+    <h2 id="panelTitle">新增岗位</h2>
+
+    <div class="field-row">
+      <div class="field">
+        <label for="f-company">公司</label>
+        <input id="f-company" list="companyList" placeholder="例如：字节跳动" />
+        <datalist id="companyList"></datalist>
+      </div>
+      <div class="field" style="flex:0 0 110px;">
+        <label for="f-region">地区</label>
+        <select id="f-region">
+          <option value="cn">国内</option>
+          <option value="us">美国</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label for="f-title">岗位名称</label>
+        <input id="f-title" placeholder="例如：产品经理" />
+      </div>
+      <div class="field">
+        <label for="f-dept">部门</label>
+        <input id="f-dept" placeholder="例如：商业化" />
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label for="f-location">地点</label>
+        <input id="f-location" placeholder="例如：北京 / 圣何塞" />
+      </div>
+      <div class="field">
+        <label for="f-joblink">岗位链接</label>
+        <input id="f-joblink" placeholder="https://…" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="f-jd">JD（岗位描述）</label>
+      <textarea id="f-jd" class="big"></textarea>
+    </div>
+
+    <div class="section-label">投递阶段</div>
+    <div class="field">
+      <select id="f-applystage">
+        <option value="pending">待投递</option>
+        <option value="screening">简历筛选中</option>
+        <option value="screen_pass">简历筛选通过</option>
+        <option value="screen_reject">简历未通过</option>
+      </select>
+    </div>
+
+    <div class="section-label">面试轮次</div>
+    <div class="rounds-list" id="roundsList"></div>
+    <button class="btn-small" id="addRoundBtn" style="align-self:flex-start;">+ 添加一轮</button>
+
+    <div class="section-label">结果</div>
+    <div class="field">
+      <select id="f-result">
+        <option value="">暂无结果</option>
+        <option value="verbal_offer">口头 Offer</option>
+        <option value="written_intent">已发意向书</option>
+        <option value="formal_offer">正式 Offer</option>
+        <option value="accepted">已接受 Offer</option>
+        <option value="declined">已拒绝 Offer</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="f-notes">备注</label>
+      <textarea id="f-notes" class="big"></textarea>
+    </div>
+
+    <div class="panel-actions">
+      <button class="btn-primary" id="saveBtn">保存 💌</button>
+    </div>
+    <button class="link-delete" id="deleteBtn" style="display:none;">🗑️ 删除</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var STORE_KEY = 'qiuzhao_tracker_v2';
+  var REGIONS = { cn: '国内 🏮', us: '美国 🗽' };
+  var CATS = {
+    applying:     { name: '投递中 📨', color: '#9FB6D6', pill: 'pill-applying' },
+    interviewing: { name: '面试中 🎤', color: '#CFA05A', pill: 'pill-interviewing' },
+    offer:        { name: 'Offer 🎉',  color: '#A997C2', pill: 'pill-offer' },
+    closed:       { name: '已结束 🌙', color: '#E2A18F', pill: 'pill-closed' }
+  };
+  var CAT_ORDER = ['applying','interviewing','offer','closed'];
+  var ROUND_RESULTS = { pending: '待定', pass: '通过', fail: '未通过', lateral_fail: '横向挂' };
+  var APPLY_LABELS = { pending: '待投递', screening: '简历筛选中', screen_pass: '简历筛选通过', screen_reject: '简历未通过' };
+  var RESULT_LABELS = { verbal_offer: '口头 Offer', written_intent: '已发意向书', formal_offer: '正式 Offer', accepted: '已接受 Offer', declined: '已拒绝 Offer' };
+
+  var state = { version: 2, items: [] };
+  var activeRegion = 'cn';
+  var activeView = 'board';
+  var editingId = null;
+  var editingRounds = [];
+
+  function uid(){ return 'x' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+  function load(){
+    try {
+      var raw = localStorage.getItem(STORE_KEY);
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        if (parsed && Array.isArray(parsed.items)) { state = parsed; return; }
+      }
+    } catch(e) { console.warn('load failed', e); }
+    // migrate from v1 if present
+    try {
+      var oldRaw = localStorage.getItem('qiuzhao_tracker_v1');
+      if (oldRaw) {
+        var oldParsed = JSON.parse(oldRaw);
+        if (oldParsed && Array.isArray(oldParsed.items)) {
+          state.items = oldParsed.items.map(function(it){
+            return {
+              id: it.id || uid(),
+              company: it.company || '未命名公司',
+              region: 'cn',
+              title: it.role || '',
+              department: '',
+              location: it.location || '',
+              jobLink: '',
+              jd: '',
+              applyStage: 'pending',
+              rounds: [],
+              resultStage: null,
+              notes: it.notes || ''
+            };
+          });
+          save();
+        }
+      }
+    } catch(e) { console.warn('migration failed', e); }
+  }
+  function save(){
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+    catch(e) { console.warn('save failed', e); }
+  }
+
+  function computeStatus(item){
+    if (item.resultStage) {
+      if (item.resultStage === 'accepted') return { cat:'closed', label:'已接受 Offer' };
+      if (item.resultStage === 'declined') return { cat:'closed', label:'已拒绝 Offer' };
+      return { cat:'offer', label: RESULT_LABELS[item.resultStage] };
+    }
+    if (item.applyStage === 'screen_reject') return { cat:'closed', label:'简历未通过' };
+    var rounds = item.rounds || [];
+    var failed = rounds.find(function(r){ return r.result === 'fail' || r.result === 'lateral_fail'; });
+    if (failed) return { cat:'closed', label: (failed.name||'面试') + (failed.result==='lateral_fail' ? ' 横向挂' : ' 未通过') };
+    if (rounds.length > 0) {
+      var last = rounds[rounds.length-1];
+      if (!last.result || last.result === 'pending') return { cat:'interviewing', label: (last.name||'面试') + ' 进行中' };
+      if (last.result === 'pass') return { cat:'interviewing', label: (last.name||'面试') + ' 通过，待安排下一轮' };
+    }
+    if (item.applyStage === 'screen_pass') return { cat:'interviewing', label:'简历通过，待约面' };
+    if (item.applyStage === 'screening') return { cat:'applying', label:'简历筛选中' };
+    return { cat:'applying', label:'待投递' };
+  }
+
+  function nextDate(item){
+    var rounds = item.rounds || [];
+    for (var i=rounds.length-1;i>=0;i--){
+      if (rounds[i].date) return rounds[i].date;
+    }
+    return null;
+  }
+  function fmtDate(d){
+    if (!d) return '';
+    var dt = new Date(d + 'T00:00:00');
+    if (isNaN(dt)) return d;
+    return (dt.getMonth()+1) + '月' + dt.getDate() + '日';
+  }
+  function isSoon(d){
+    if (!d) return false;
+    var dt = new Date(d + 'T00:00:00');
+    var now = new Date(); now.setHours(0,0,0,0);
+    var diff = (dt-now)/86400000;
+    return diff >= 0 && diff <= 3;
+  }
+  function escapeHtml(s){
+    return String(s||'').replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  var tabsEl = document.getElementById('tabs');
+  var statsEl = document.getElementById('stats');
+  var contentEl = document.getElementById('content');
+  var searchEl = document.getElementById('search');
+  var overlay = document.getElementById('overlay');
+
+  function renderTabs(){
+    var counts = { cn:0, us:0 };
+    state.items.forEach(function(it){ if (counts[it.region] !== undefined) counts[it.region]++; });
+    tabsEl.innerHTML = '';
+    ['cn','us'].forEach(function(r){
+      var btn = document.createElement('button');
+      btn.className = 'tab' + (activeRegion===r ? ' active' : '');
+      btn.innerHTML = REGIONS[r] + ' <span class="tab-count">' + counts[r] + '</span>';
+      btn.addEventListener('click', function(){ activeRegion = r; renderAll(); });
+      tabsEl.appendChild(btn);
+    });
+  }
+
+  function renderStats(){
+    var total = state.items.length;
+    var applying = 0, interviewing = 0, offer = 0;
+    state.items.forEach(function(it){
+      var s = computeStatus(it);
+      if (s.cat === 'applying') applying++;
+      else if (s.cat === 'interviewing') interviewing++;
+      else if (s.cat === 'offer') offer++;
+    });
+    function stat(n,l){ return '<div class="stat"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>'; }
+    statsEl.innerHTML = stat(total,'📋 总岗位') + stat(applying,'📨 投递中') + stat(interviewing,'🎤 面试中') + stat(offer,'🎉 Offer中');
+  }
+
+  function filteredItems(){
+    var q = (searchEl.value||'').trim().toLowerCase();
+    return state.items.filter(function(it){
+      if (it.region !== activeRegion) return false;
+      if (!q) return true;
+      return (it.company||'').toLowerCase().indexOf(q) > -1 || (it.title||'').toLowerCase().indexOf(q) > -1;
+    });
+  }
+
+  function renderAll(){
+    renderTabs();
+    renderStats();
+    document.getElementById('viewBoardBtn').className = activeView==='board' ? 'active' : '';
+    document.getElementById('viewListBtn').className = activeView==='list' ? 'active' : '';
+    var items = filteredItems();
+    contentEl.innerHTML = '';
+    if (items.length === 0) {
+      var empty = document.createElement('div');
+      empty.className = 'empty-state';
+      empty.textContent = state.items.filter(function(it){return it.region===activeRegion;}).length === 0
+        ? ('还没有' + REGIONS[activeRegion].replace(/\s*[^\s]+$/,'') + '的投递记录，点右上角"✨ 新增岗位"开始')
+        : '没有匹配的结果 🔍';
+      contentEl.appendChild(empty);
+      return;
+    }
+    if (activeView === 'board') renderBoard(items); else renderList(items);
+  }
+
+  function renderBoard(items){
+    var board = document.createElement('div');
+    board.className = 'board';
+    CAT_ORDER.forEach(function(cat){
+      var col = document.createElement('div');
+      col.className = 'col';
+      col.style.setProperty('--stage-color', CATS[cat].color);
+      var inCat = items.filter(function(it){ return computeStatus(it).cat === cat; });
+      var head = document.createElement('div');
+      head.className = 'col-head';
+      head.innerHTML = '<span class="name">'+CATS[cat].name+'</span><span class="count">'+inCat.length+'</span>';
+      col.appendChild(head);
+      var body = document.createElement('div');
+      body.className = 'col-body';
+      if (inCat.length === 0) {
+        var e = document.createElement('div'); e.className='empty-col'; e.textContent='暂无'; body.appendChild(e);
+      } else {
+        inCat.forEach(function(it){ body.appendChild(renderCard(it)); });
+      }
+      col.appendChild(body);
+      board.appendChild(col);
+    });
+    contentEl.appendChild(board);
+  }
+
+  function renderCard(it){
+    var s = computeStatus(it);
+    var card = document.createElement('div');
+    card.className = 'card';
+    card.style.setProperty('--stage-color', CATS[s.cat].color);
+    var nd = nextDate(it);
+    var dateHtml = nd ? '<div class="next-date'+(isSoon(nd)?' soon':'')+'">'+fmtDate(nd)+'</div>' : '';
+    card.innerHTML =
+      '<div class="company">'+escapeHtml(it.company||'未命名公司')+'</div>' +
+      '<div class="role">'+escapeHtml(it.title||'')+'</div>' +
+      '<div class="meta">'+escapeHtml(s.label)+'</div>' + dateHtml;
+    card.addEventListener('click', function(){ openPanel(it.id); });
+    return card;
+  }
+
+  function renderList(items){
+    var groups = {};
+    var order = [];
+    items.forEach(function(it){
+      var key = it.company || '未命名公司';
+      if (!groups[key]) { groups[key] = []; order.push(key); }
+      groups[key].push(it);
+    });
+    order.forEach(function(company){
+      var group = document.createElement('div');
+      group.className = 'company-group';
+      var head = document.createElement('div');
+      head.className = 'company-head';
+      head.innerHTML = '<span class="cname">'+escapeHtml(company)+'</span><span class="ccount">'+groups[company].length+' 个岗位</span>';
+      group.appendChild(head);
+      groups[company].forEach(function(it){
+        var s = computeStatus(it);
+        var nd = nextDate(it);
+        var row = document.createElement('div');
+        row.className = 'pos-row';
+        row.innerHTML =
+          '<div class="title">'+escapeHtml(it.title||'未命名岗位')+(it.department?' <span class="dept">· '+escapeHtml(it.department)+'</span>':'')+'</div>' +
+          '<span class="pill '+CATS[s.cat].pill+'">'+escapeHtml(s.label)+'</span>' +
+          '<div class="date-col'+(isSoon(nd)?' soon':'')+'">'+(nd?fmtDate(nd):'—')+'</div>' +
+          '<button class="btn-small">查看</button>';
+        row.addEventListener('click', function(){ openPanel(it.id); });
+        group.appendChild(row);
+      });
+      contentEl.appendChild(group);
+    });
+  }
+
+  // ---- Panel ----
+  var panelTitle = document.getElementById('panelTitle');
+  var fCompany = document.getElementById('f-company');
+  var fRegion = document.getElementById('f-region');
+  var fTitle = document.getElementById('f-title');
+  var fDept = document.getElementById('f-dept');
+  var fLocation = document.getElementById('f-location');
+  var fJobLink = document.getElementById('f-joblink');
+  var fJd = document.getElementById('f-jd');
+  var fApplyStage = document.getElementById('f-applystage');
+  var fResult = document.getElementById('f-result');
+  var fNotes = document.getElementById('f-notes');
+  var roundsListEl = document.getElementById('roundsList');
+  var deleteBtn = document.getElementById('deleteBtn');
+  var companyListEl = document.getElementById('companyList');
+
+  function defaultRoundName(idx){
+    var names = ['一面','二面','三面','四面','五面'];
+    if (idx < names.length) return names[idx];
+    return '第' + (idx+1) + '轮';
+  }
+
+  function renderRoundsEditor(){
+    roundsListEl.innerHTML = '';
+    editingRounds.forEach(function(r, idx){
+      var row = document.createElement('div');
+      row.className = 'round-row';
+      var nameInput = document.createElement('input');
+      nameInput.value = r.name || defaultRoundName(idx);
+      nameInput.placeholder = '轮次名称';
+      nameInput.addEventListener('input', function(){ r.name = nameInput.value; });
+
+      var dateInput = document.createElement('input');
+      dateInput.type = 'date';
+      dateInput.value = r.date || '';
+      dateInput.addEventListener('input', function(){ r.date = dateInput.value; });
+
+      var resultSelect = document.createElement('select');
+      Object.keys(ROUND_RESULTS).forEach(function(key){
+        var opt = document.createElement('option');
+        opt.value = key; opt.textContent = ROUND_RESULTS[key];
+        if ((r.result||'pending') === key) opt.selected = true;
+        resultSelect.appendChild(opt);
+      });
+      resultSelect.addEventListener('change', function(){ r.result = resultSelect.value; });
+
+      var removeBtn = document.createElement('button');
+      removeBtn.className = 'round-remove';
+      removeBtn.innerHTML = '&times;';
+      removeBtn.title = '删除这一轮';
+      removeBtn.addEventListener('click', function(){
+        editingRounds.splice(idx,1);
+        renderRoundsEditor();
+      });
+
+      row.appendChild(nameInput); row.appendChild(dateInput); row.appendChild(resultSelect); row.appendChild(removeBtn);
+      roundsListEl.appendChild(row);
+    });
+  }
+
+  document.getElementById('addRoundBtn').addEventListener('click', function(){
+    editingRounds.push({ id: uid(), name: defaultRoundName(editingRounds.length), date: '', result: 'pending' });
+    renderRoundsEditor();
+  });
+
+  function refreshCompanyList(){
+    var names = Array.from(new Set(state.items.map(function(it){ return it.company; }).filter(Boolean)));
+    companyListEl.innerHTML = '';
+    names.forEach(function(n){
+      var opt = document.createElement('option'); opt.value = n; companyListEl.appendChild(opt);
+    });
+  }
+
+  function openPanel(id){
+    editingId = id || null;
+    refreshCompanyList();
+    if (editingId) {
+      var it = state.items.find(function(x){ return x.id===editingId; });
+      panelTitle.textContent = '编辑岗位';
+      fCompany.value = it.company||'';
+      fRegion.value = it.region||'cn';
+      fTitle.value = it.title||'';
+      fDept.value = it.department||'';
+      fLocation.value = it.location||'';
+      fJobLink.value = it.jobLink||'';
+      fJd.value = it.jd||'';
+      fApplyStage.value = it.applyStage||'pending';
+      fResult.value = it.resultStage||'';
+      fNotes.value = it.notes||'';
+      editingRounds = (it.rounds||[]).map(function(r){ return Object.assign({},r); });
+      deleteBtn.style.display = 'block';
+    } else {
+      panelTitle.textContent = '新增岗位';
+      fCompany.value=''; fRegion.value = activeRegion; fTitle.value=''; fDept.value=''; fLocation.value='';
+      fJobLink.value=''; fJd.value=''; fApplyStage.value='pending'; fResult.value=''; fNotes.value='';
+      editingRounds = [];
+      deleteBtn.style.display = 'none';
+    }
+    renderRoundsEditor();
+    overlay.classList.add('open');
+    setTimeout(function(){ fCompany.focus(); }, 50);
+  }
+  function closePanel(){ overlay.classList.remove('open'); editingId = null; }
+
+  document.getElementById('addBtn').addEventListener('click', function(){ openPanel(null); });
+  document.getElementById('closeBtn').addEventListener('click', closePanel);
+  overlay.addEventListener('click', function(e){ if (e.target === overlay) closePanel(); });
+
+  document.getElementById('saveBtn').addEventListener('click', function(){
+    var company = fCompany.value.trim();
+    if (!company) { fCompany.focus(); return; }
+    var payload = {
+      company: company,
+      region: fRegion.value,
+      title: fTitle.value.trim(),
+      department: fDept.value.trim(),
+      location: fLocation.value.trim(),
+      jobLink: fJobLink.value.trim(),
+      jd: fJd.value.trim(),
+      applyStage: fApplyStage.value,
+      rounds: editingRounds.map(function(r,idx){ return { id: r.id||uid(), name: (r.name||defaultRoundName(idx)).trim(), date: r.date||'', result: r.result||'pending' }; }),
+      resultStage: fResult.value || null,
+      notes: fNotes.value.trim()
+    };
+    if (editingId) {
+      var it = state.items.find(function(x){ return x.id===editingId; });
+      Object.assign(it, payload);
+    } else {
+      payload.id = uid();
+      state.items.push(payload);
+    }
+    save();
+    activeRegion = payload.region;
+    closePanel();
+    renderAll();
+  });
+
+  deleteBtn.addEventListener('click', function(){
+    if (!editingId) return;
+    if (!confirm('确定删除这个岗位记录吗？')) return;
+    state.items = state.items.filter(function(x){ return x.id!==editingId; });
+    save();
+    closePanel();
+    renderAll();
+  });
+
+  document.getElementById('exportBtn').addEventListener('click', function(){
+    try {
+      var blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url; a.download = '秋招进度备份_' + new Date().toISOString().slice(0,10) + '.json';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch(e) { alert('导出失败，请稍后再试'); }
+  });
+
+  document.getElementById('viewBoardBtn').addEventListener('click', function(){ activeView='board'; renderAll(); });
+  document.getElementById('viewListBtn').addEventListener('click', function(){ activeView='list'; renderAll(); });
+  searchEl.addEventListener('input', renderAll);
+
+  function seedIfEmpty(){
+    if (state.items.length > 0) return;
+    state.items = [
+      {
+        id: uid(), company: '字节跳动', region: 'cn', title: '产品经理', department: '商业化', location: '北京',
+        jobLink: '', jd: '', applyStage: 'screen_pass',
+        rounds: [{id:uid(),name:'一面',date:'',result:'pass'},{id:uid(),name:'二面',date:'',result:'pending'}],
+        resultStage: null, notes: ''
+      },
+      {
+        id: uid(), company: 'TikTok', region: 'us', title: 'Product Manager', department: '', location: '圣何塞',
+        jobLink: '', jd: '', applyStage: 'screening', rounds: [], resultStage: null, notes: ''
+      }
+    ];
+    save();
+  }
+
+  load();
+  seedIfEmpty();
+  renderAll();
+})();
+</script>
+</body>
+</html>
