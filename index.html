@@ -125,10 +125,20 @@
 
   /* List view */
   .company-group { margin-bottom: 22px; }
-  .company-head { display: flex; align-items: baseline; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line);
-    margin-bottom: 8px; }
+  .company-head { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line);
+    margin-bottom: 8px; cursor: pointer; flex-wrap: wrap; }
+  .company-head:hover .cname { color: var(--brand); }
+  .company-head .chevron { font-size: 11px; color: var(--ink-soft); width: 12px; text-align: center; flex: 0 0 auto; }
   .company-head .cname { font-size: 16px; font-weight: 600; font-family: 'Source Serif 4', serif; }
-  .company-head .ccount { font-size: 12px; color: var(--ink-soft); }
+  .company-head .ccount { font-size: 12px; color: var(--ink-soft); margin-left: auto; }
+  .company-link { text-decoration: none; font-size: 13px; opacity: 0.85; }
+  .company-link:hover { opacity: 1; }
+  .company-link-edit { background: none; border: none; font-size: 11px; color: var(--ink-soft); cursor: pointer;
+    opacity: 0.5; padding: 2px 4px; }
+  .company-link-edit:hover { opacity: 1; color: var(--brand); }
+  .company-summary { display: flex; gap: 8px; align-items: center; }
+  .summary-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--ink-soft); }
+  .summary-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
   .pos-row { display: grid; grid-template-columns: 1fr auto auto auto; gap: 14px; align-items: center;
     padding: 10px 12px; border-radius: 12px; cursor: pointer; border: 1px solid transparent; }
   .pos-row:hover { background: var(--paper-raised); border-color: var(--line); }
@@ -342,7 +352,7 @@
   var APPLY_LABELS = { pending: '待投递', screening: '简历筛选中', screen_pass: '简历筛选通过', screen_reject: '简历未通过' };
   var RESULT_LABELS = { verbal_offer: '口头 Offer', written_intent: '已发意向书', formal_offer: '正式 Offer', accepted: '已接受 Offer', declined: '已拒绝 Offer' };
 
-  var state = { version: 2, items: [] };
+  var state = { version: 2, items: [], companyLinks: {}, listCollapsed: {} };
   var activeRegion = 'cn';
   var activeView = 'board';
   var editingId = null;
@@ -355,7 +365,12 @@
       var raw = localStorage.getItem(STORE_KEY);
       if (raw) {
         var parsed = JSON.parse(raw);
-        if (parsed && Array.isArray(parsed.items)) { state = parsed; return; }
+        if (parsed && Array.isArray(parsed.items)) {
+          state = parsed;
+          if (!state.companyLinks) state.companyLinks = {};
+          if (!state.listCollapsed) state.listCollapsed = {};
+          return;
+        }
       }
     } catch(e) { console.warn('load failed', e); }
     // migrate from v1 if present
@@ -388,6 +403,26 @@
   function save(){
     try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
     catch(e) { console.warn('save failed', e); }
+  }
+  function companyKey(region, company){ return region + '::' + company; }
+  function getCompanyLink(region, company){
+    return (state.companyLinks && state.companyLinks[companyKey(region, company)]) || '';
+  }
+  function setCompanyLink(region, company, url){
+    if (!state.companyLinks) state.companyLinks = {};
+    var key = companyKey(region, company);
+    if (url) state.companyLinks[key] = url; else delete state.companyLinks[key];
+    save();
+  }
+  function isListCollapsed(region, company, count){
+    var key = companyKey(region, company);
+    if (state.listCollapsed && Object.prototype.hasOwnProperty.call(state.listCollapsed, key)) return state.listCollapsed[key];
+    return count > 3;
+  }
+  function toggleListCollapsed(region, company, current){
+    if (!state.listCollapsed) state.listCollapsed = {};
+    state.listCollapsed[companyKey(region, company)] = !current;
+    save();
   }
 
   var IDLE_COLOR = '#C9B7BD';
@@ -460,14 +495,17 @@
   function renderStats(){
     var total = state.items.length;
     var applying = 0, interviewing = 0, offer = 0;
+    var companySet = {};
     state.items.forEach(function(it){
       var s = computeStatus(it);
       if (s.cat === 'applying') applying++;
       else if (s.cat === 'interviewing') interviewing++;
       else if (s.cat === 'offer') offer++;
+      if (it.company) companySet[it.company] = true;
     });
+    var companyCount = Object.keys(companySet).length;
     function stat(n,l){ return '<div class="stat"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>'; }
-    statsEl.innerHTML = stat(total,'📋 总岗位') + stat(applying,'📨 投递中') + stat(interviewing,'🎤 面试中') + stat(offer,'🎉 Offer');
+    statsEl.innerHTML = stat(companyCount,'🏢 公司数') + stat(total,'📋 总岗位') + stat(applying,'📨 投递中') + stat(interviewing,'🎤 面试中') + stat(offer,'🎉 Offer');
   }
 
   function renderReminder(){
@@ -561,26 +599,68 @@
       groups[key].push(it);
     });
     order.forEach(function(company){
+      var positions = groups[company];
+      var count = positions.length;
+      var collapsed = isListCollapsed(activeRegion, company, count);
+
       var group = document.createElement('div');
       group.className = 'company-group';
+
       var head = document.createElement('div');
       head.className = 'company-head';
-      head.innerHTML = '<span class="cname">'+escapeHtml(company)+'</span><span class="ccount">'+groups[company].length+' 个岗位</span>';
+
+      var counts = { applying:0, interviewing:0, offer:0, closed:0 };
+      positions.forEach(function(it){ counts[computeStatus(it).cat]++; });
+      var dotsHtml = CAT_ORDER.filter(function(c){ return counts[c] > 0; }).map(function(c){
+        return '<span class="summary-chip"><span class="summary-dot" style="background:'+CATS[c].color+'"></span>'+counts[c]+'</span>';
+      }).join('');
+
+      var link = getCompanyLink(activeRegion, company);
+      var linkHtml = link
+        ? '<a class="company-link" href="'+escapeHtml(link)+'" target="_blank" rel="noopener" title="打开投递集合页">🔗</a>'
+        : '';
+
+      head.innerHTML =
+        '<span class="chevron">'+(collapsed?'▸':'▾')+'</span>' +
+        '<span class="cname">'+escapeHtml(company)+'</span>' +
+        linkHtml +
+        '<button type="button" class="company-link-edit" title="设置/修改投递集合页链接">🔗✏️</button>' +
+        '<span class="company-summary">'+dotsHtml+'</span>' +
+        '<span class="ccount">'+count+' 个岗位</span>';
       group.appendChild(head);
-      groups[company].forEach(function(it){
-        var s = computeStatus(it);
-        var nd = nextDate(it);
-        var row = document.createElement('div');
-        row.className = 'pos-row';
-        var pillStyle = s.color ? (' style="color:'+s.color+';background:'+s.color+'22;"') : '';
-        row.innerHTML =
-          '<div class="title">'+escapeHtml(it.title||'未命名岗位')+(it.department?' <span class="dept">· '+escapeHtml(it.department)+'</span>':'')+'</div>' +
-          '<span class="pill '+CATS[s.cat].pill+'"'+pillStyle+'>'+escapeHtml(s.label)+'</span>' +
-          '<div class="date-col'+(isSoon(nd)?' soon':'')+'">'+(nd?fmtDate(nd):'—')+'</div>' +
-          '<button class="btn-small">查看</button>';
-        row.addEventListener('click', function(){ openPanel(it.id); });
-        group.appendChild(row);
+
+      head.addEventListener('click', function(e){
+        if (e.target.closest('.company-link') || e.target.closest('.company-link-edit')) return;
+        toggleListCollapsed(activeRegion, company, collapsed);
+        renderAll();
       });
+
+      var editBtn = head.querySelector('.company-link-edit');
+      editBtn.addEventListener('click', function(e){
+        e.stopPropagation();
+        var current = getCompanyLink(activeRegion, company);
+        var url = window.prompt('这家公司的投递集合页链接（比如官网/HR系统的申请进度页，留空可清除）：', current);
+        if (url === null) return;
+        setCompanyLink(activeRegion, company, url.trim());
+        renderAll();
+      });
+
+      if (!collapsed) {
+        positions.forEach(function(it){
+          var s = computeStatus(it);
+          var nd = nextDate(it);
+          var row = document.createElement('div');
+          row.className = 'pos-row';
+          var pillStyle = s.color ? (' style="color:'+s.color+';background:'+s.color+'22;"') : '';
+          row.innerHTML =
+            '<div class="title">'+escapeHtml(it.title||'未命名岗位')+(it.department?' <span class="dept">· '+escapeHtml(it.department)+'</span>':'')+'</div>' +
+            '<span class="pill '+CATS[s.cat].pill+'"'+pillStyle+'>'+escapeHtml(s.label)+'</span>' +
+            '<div class="date-col'+(isSoon(nd)?' soon':'')+'">'+(nd?fmtDate(nd):'—')+'</div>' +
+            '<button class="btn-small">查看</button>';
+          row.addEventListener('click', function(){ openPanel(it.id); });
+          group.appendChild(row);
+        });
+      }
       contentEl.appendChild(group);
     });
   }
@@ -833,6 +913,10 @@
           if (idx >= 0) { state.items[idx] = inItem; updated++; }
           else { state.items.push(inItem); added++; }
         });
+        if (parsed.companyLinks) {
+          if (!state.companyLinks) state.companyLinks = {};
+          Object.keys(parsed.companyLinks).forEach(function(k){ state.companyLinks[k] = parsed.companyLinks[k]; });
+        }
         save();
         renderAll();
         alert('导入完成：新增 ' + added + ' 条，更新 ' + updated + ' 条');
