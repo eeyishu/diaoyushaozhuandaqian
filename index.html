@@ -118,6 +118,7 @@
   .card:hover { box-shadow: 0 6px 16px rgba(227,143,160,0.22); transform: translateY(-1px); }
   .card .company { font-weight: 600; font-size: 14px; margin-bottom: 1px; }
   .card .role { font-size: 12.5px; color: var(--ink-soft); margin-bottom: 7px; }
+  .card .card-dept { opacity: 0.75; }
   .card .meta { font-size: 11.5px; color: var(--ink-soft); }
   .card .next-date { margin-top: 5px; font-size: 11px; font-weight: 500; }
   .card .next-date.soon { color: var(--rust); }
@@ -317,7 +318,10 @@
     <div class="panel-actions">
       <button class="btn-primary" id="saveBtn">保存 💌</button>
     </div>
-    <button class="link-delete" id="deleteBtn" style="display:none;">🗑️ 删除</button>
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <button class="btn-small" id="duplicateBtn" style="display:none;">📋 复制成新岗位</button>
+      <button class="link-delete" id="deleteBtn" style="display:none;">🗑️ 删除</button>
+    </div>
   </div>
 </div>
 
@@ -541,7 +545,7 @@
     var dateHtml = nd ? '<div class="next-date'+(isSoon(nd)?' soon':'')+'">'+fmtDate(nd)+'</div>' : '';
     card.innerHTML =
       '<div class="company">'+escapeHtml(it.company||'未命名公司')+'</div>' +
-      '<div class="role">'+escapeHtml(it.title||'')+'</div>' +
+      '<div class="role">'+escapeHtml(it.title||'')+(it.department?' <span class="card-dept">· '+escapeHtml(it.department)+'</span>':'')+'</div>' +
       '<div class="meta">'+escapeHtml(s.label)+'</div>' + dateHtml;
     card.addEventListener('click', function(){ openPanel(it.id); });
     return card;
@@ -594,6 +598,7 @@
   var fNotes = document.getElementById('f-notes');
   var roundsListEl = document.getElementById('roundsList');
   var deleteBtn = document.getElementById('deleteBtn');
+  var duplicateBtn = document.getElementById('duplicateBtn');
   var companyListEl = document.getElementById('companyList');
 
   function defaultRoundName(idx){
@@ -716,12 +721,14 @@
       fNotes.value = it.notes||'';
       editingRounds = (it.rounds||[]).map(function(r){ return Object.assign({},r); });
       deleteBtn.style.display = 'block';
+      duplicateBtn.style.display = 'block';
     } else {
       panelTitle.textContent = '新增岗位';
       fCompany.value=''; fRegion.value = activeRegion; fTitle.value=''; fDept.value=''; fLocation.value='';
       fJobLink.value=''; fJd.value=''; fApplyStage.value='pending'; fResult.value=''; fNotes.value='';
       editingRounds = [];
       deleteBtn.style.display = 'none';
+      duplicateBtn.style.display = 'none';
     }
     renderRoundsEditor();
     overlay.classList.add('open');
@@ -768,6 +775,31 @@
     state.items = state.items.filter(function(x){ return x.id!==editingId; });
     save();
     closePanel();
+    renderAll();
+  });
+
+  duplicateBtn.addEventListener('click', function(){
+    if (!editingId) return;
+    var orig = state.items.find(function(x){ return x.id===editingId; });
+    if (!orig) return;
+    var copy = {
+      id: uid(),
+      company: orig.company,
+      region: orig.region,
+      title: orig.title,
+      department: orig.department,
+      location: orig.location,
+      jobLink: orig.jobLink,
+      jd: orig.jd,
+      applyStage: 'pending',
+      rounds: [],
+      resultStage: null,
+      notes: ''
+    };
+    state.items.push(copy);
+    save();
+    activeRegion = copy.region;
+    openPanel(copy.id);
     renderAll();
   });
 
