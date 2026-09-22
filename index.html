@@ -214,7 +214,7 @@
   <div class="reminder-banner" id="reminderBanner" style="display:none;"></div>
 
   <div class="toolbar">
-    <input class="search" id="search" placeholder="🔍 搜索公司或岗位…" />
+    <input class="search" id="search" placeholder="🔍 搜索公司/岗位/部门…" />
     <div class="view-toggle">
       <button id="viewBoardBtn">🗂️ 看板</button>
       <button id="viewListBtn">📃 列表</button>
@@ -487,7 +487,8 @@
     return state.items.filter(function(it){
       if (it.region !== activeRegion) return false;
       if (!q) return true;
-      return (it.company||'').toLowerCase().indexOf(q) > -1 || (it.title||'').toLowerCase().indexOf(q) > -1;
+      return (it.company||'').toLowerCase().indexOf(q) > -1 || (it.title||'').toLowerCase().indexOf(q) > -1 ||
+        (it.department||'').toLowerCase().indexOf(q) > -1;
     });
   }
 
