@@ -422,7 +422,7 @@
   function isListCollapsed(region, company, count){
     var key = companyKey(region, company);
     if (state.listCollapsed && Object.prototype.hasOwnProperty.call(state.listCollapsed, key)) return state.listCollapsed[key];
-    return count > 3;
+    return true;
   }
   function toggleListCollapsed(region, company, current){
     if (!state.listCollapsed) state.listCollapsed = {};
